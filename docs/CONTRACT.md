@@ -101,7 +101,7 @@ sub-entity IDs are Firestore auto-IDs).
 Backend (`backend/.env`):
 ```
 GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-3-flash
+GEMINI_MODEL=gemini-3-flash-preview
 AUTH_BRIDGE_SECRET=<shared secret>
 FIREBASE_SERVICE_ACCOUNT_JSON=<full JSON contents of a Firebase Admin service account key>
 CORS_ORIGINS=http://localhost:3000

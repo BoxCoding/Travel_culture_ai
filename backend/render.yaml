@@ -11,7 +11,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-3-flash
+        value: gemini-3-flash-preview
       - key: AUTH_BRIDGE_SECRET
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON

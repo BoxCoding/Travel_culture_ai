@@ -14,7 +14,7 @@ Browser
 Next.js 14 (App Router, TypeScript, Tailwind)  ──  Auth.js v5 (Credentials + Prisma/Turso libSQL)
   │  Server Components / Route Handlers mint a short-lived bridge JWT server-side
   ▼
-FastAPI (Python)  ──  LangGraph agent graph  ──  Gemini API (gemini-3-flash)
+FastAPI (Python)  ──  LangGraph agent graph  ──  Gemini API (gemini-3-flash-preview)
   │
   ▼
 Firestore — destinations, hidden gems, heritage stories, events, experiences, saved items
@@ -104,6 +104,24 @@ exact same value as `backend/.env`, and `BACKEND_API_URL` pointing at wherever t
 running (`http://localhost:8010` in this setup). Leave `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN`
 unset locally to use the local SQLite file instead of Turso.
 
+## Testing
+
+```bash
+cd backend
+source venv/bin/activate
+python -m pytest -v
+```
+
+42 tests in `backend/tests/` cover every router (health, destinations, recommendations,
+storytelling, chat, saved items) and the auth dependency (expired/invalid/missing tokens,
+optional vs. required auth). They run fully offline: `tests/fake_firestore.py` is an in-memory
+double for the Firestore client (wired in via FastAPI's `dependency_overrides`, no real GCP
+project needed), and every Gemini-calling function is mocked at the LLM boundary
+(`tests/conftest.py`'s `mock_gemini` fixture) so the suite is fast, deterministic, and free —
+no API quota consumed. Tests also assert the AI-generation-cache behavior (first request
+generates and persists, second request reuses the cached copy) and that Gemini failures
+surface as clean `502`s rather than crashing.
+
 ## Deployment
 
 - **Backend → Render**: connect this repo, use the `backend/render.yaml` blueprint (build:
@@ -118,7 +136,7 @@ unset locally to use the local SQLite file instead of Turso.
 
 ## Known issues
 
-- **Gemini model**: set to `gemini-3-flash` per request. If this model id isn't available on
+- **Gemini model**: set to `gemini-3-flash-preview` per request. If this model id isn't available on
   your API key's project, AI-backed endpoints will return a clean `502` with the exact
   upstream error rather than crashing — swap `GEMINI_MODEL` in `backend/.env` if so.
 - **Security**: `npm audit` flags known advisories in Next.js 14.2.35 (mostly Image
@@ -136,5 +154,5 @@ unset locally to use the local SQLite file instead of Turso.
 | Auth | Auth.js v5, Credentials provider, JWT sessions, Prisma + libSQL (Turso in prod) |
 | Backend | FastAPI, Python |
 | Agents | LangGraph (`StateGraph`) |
-| LLM | Gemini (`gemini-3-flash` via `langchain-google-genai`) |
+| LLM | Gemini (`gemini-3-flash-preview` via `langchain-google-genai`) |
 | Database | Firestore (backend domain data), libSQL/Turso (frontend auth) |

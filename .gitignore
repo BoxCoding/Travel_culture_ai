@@ -12,6 +12,7 @@ __pycache__/
 .venv/
 venv/
 backend/venv/
+.pytest_cache/
 
 # Node
 node_modules/
