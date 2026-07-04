@@ -11,24 +11,22 @@ cultural experience connections.
 Browser
   │
   ▼
-Next.js 14 (App Router, TypeScript, Tailwind)  ──  Auth.js v5 (Credentials + Prisma/Turso libSQL)
+Next.js 16 (App Router, TypeScript, Tailwind)  ──  Auth.js v5 (Credentials provider)
   │  Server Components / Route Handlers mint a short-lived bridge JWT server-side
   ▼
 FastAPI (Python)  ──  LangGraph agent graph  ──  Gemini API (gemini-3-flash-preview)
   │
   ▼
-Firestore — destinations, hidden gems, heritage stories, events, experiences, saved items
+Firestore — single database for both sides: users, destinations, hidden gems, heritage
+stories, events, experiences, saved items
 ```
 
-Two independent databases:
-- `frontend` — user accounts (Auth.js / Prisma), via a libSQL driver adapter: a local SQLite
-  file in dev, or a hosted Turso database in production.
-- `backend` — all travel/cultural domain data lives in Firestore (Firebase Admin SDK).
-
-Next.js is the only thing end users talk to and owns authentication. It never exposes the
-shared `AUTH_BRIDGE_SECRET` to client-side JS — only server code (Server Components, Route
-Handlers, Server Actions) mints the bridge JWT and calls FastAPI. See
-[`docs/CONTRACT.md`](docs/CONTRACT.md) for the full API contract and auth-bridge spec.
+**One Firestore project, no SQL/SQLite anywhere.** The frontend (Node `firebase-admin`) and
+backend (Python Firebase Admin SDK) each hold their own copy of the same service account
+credential and talk to Firestore independently. Next.js is the only thing end users talk to
+and owns authentication; it never exposes the shared `AUTH_BRIDGE_SECRET` to client-side JS —
+only server code (Server Components, Route Handlers) mints the bridge JWT and calls FastAPI.
+See [`docs/CONTRACT.md`](docs/CONTRACT.md) for the full API contract and auth-bridge spec.
 
 ## AI features (LangGraph + Gemini)
 
@@ -59,20 +57,21 @@ backend/            FastAPI + LangGraph + Firestore
   app/firestore_client.py   Firebase Admin SDK init (service account or ADC)
   app/auth.py        bridge-JWT verification dependencies
   app/seed.py        seeds 8 real destinations on first run
+  tests/             pytest suite (42 tests) — fake Firestore + mocked Gemini, runs offline
   requirements.txt
   render.yaml        Render blueprint (build/start commands, health check, env var slots)
   Dockerfile         alternative container-based deploy path
   .env               GEMINI_API_KEY, AUTH_BRIDGE_SECRET, FIREBASE_SERVICE_ACCOUNT_JSON, CORS_ORIGINS (gitignored)
 
-frontend/            Next.js 14 + Auth.js v5 + Prisma + Tailwind
+frontend/            Next.js 16 + Auth.js v5 + Tailwind
   app/               pages: /, /login, /register, /dashboard, /destinations/[id]
   app/api/           route handlers: auth, register, chat proxy, recommendations proxy, saved proxy
   components/        Navbar, DestinationCard, Tabs, ChatWidget, RecommendationForm, etc.
   lib/auth.ts        Auth.js config (Credentials provider, JWT sessions)
   lib/backend.ts     server-only FastAPI client + bridge-JWT minting
-  lib/prisma.ts      Prisma client wired to a libSQL adapter (local file or Turso)
-  prisma/schema.prisma
-  .env.local         NEXTAUTH_SECRET, AUTH_BRIDGE_SECRET, BACKEND_API_URL, TURSO_* (gitignored)
+  lib/firebase-admin.ts   Firebase Admin SDK init (Firestore for user accounts)
+  lib/users.ts       user CRUD against the `users` Firestore collection
+  .env.local         NEXTAUTH_SECRET, AUTH_BRIDGE_SECRET, BACKEND_API_URL, FIREBASE_SERVICE_ACCOUNT_JSON (gitignored)
 
 docs/
   CONTRACT.md        binding API/auth contract shared by both sides
@@ -95,14 +94,13 @@ auto-seeded into Firestore on first startup.
 ```bash
 cd frontend
 npm install
-npx prisma generate
-DATABASE_URL="file:./dev.db" npx prisma migrate deploy   # first time only, local SQLite file
 npm run dev
 ```
-Visit `http://localhost:3000`. `frontend/.env.local` must have `AUTH_BRIDGE_SECRET` set to the
-exact same value as `backend/.env`, and `BACKEND_API_URL` pointing at wherever the backend is
-running (`http://localhost:8010` in this setup). Leave `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN`
-unset locally to use the local SQLite file instead of Turso.
+Visit `http://localhost:3000`. `frontend/.env.local` needs:
+- `AUTH_BRIDGE_SECRET` set to the exact same value as `backend/.env`
+- `BACKEND_API_URL` pointing at wherever the backend is running (`http://localhost:8010` here)
+- `FIREBASE_SERVICE_ACCOUNT_JSON` — the same Firebase project as the backend (can be the same
+  service account key)
 
 ## Testing
 
@@ -129,30 +127,29 @@ surface as clean `502`s rather than crashing.
   health check `/api/health`). Set `GEMINI_API_KEY`, `AUTH_BRIDGE_SECRET`,
   `FIREBASE_SERVICE_ACCOUNT_JSON`, and `CORS_ORIGINS` (the deployed frontend URL) in the
   Render dashboard — they're marked `sync: false` so they're never committed.
-- **Frontend → Vercel**: `vercel --prod` from `frontend/`. Set `NEXTAUTH_SECRET`,
-  `NEXTAUTH_URL` (the Vercel URL), `AUTH_BRIDGE_SECRET` (same value as the backend),
-  `BACKEND_API_URL` (the Render URL), and `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN` as Vercel
-  project environment variables.
+- **Frontend → Vercel**: connect this repo or run `vercel --prod` from `frontend/`. Set
+  `NEXTAUTH_SECRET`, `NEXTAUTH_URL` (the Vercel URL), `AUTH_BRIDGE_SECRET` (same value as the
+  backend), `BACKEND_API_URL` (the Render URL), and `FIREBASE_SERVICE_ACCOUNT_JSON` as Vercel
+  project environment variables. No database provisioning needed on Vercel's side — Firestore
+  is external and network-accessible, unlike a local SQLite file (which is why the original
+  SQLite/Turso setup couldn't work on Vercel's ephemeral filesystem and was replaced).
 
 ## Known issues
 
-- **Gemini model**: set to `gemini-3-flash-preview` per request. If this model id isn't available on
-  your API key's project, AI-backed endpoints will return a clean `502` with the exact
-  upstream error rather than crashing — swap `GEMINI_MODEL` in `backend/.env` if so.
-- **Security**: `npm audit` flags known advisories in Next.js 14.2.35 (mostly Image
-  Optimizer / rewrites / middleware DoS and cache-poisoning issues) that are only fully
-  fixed by upgrading to Next 15/16 — a bigger, riskier change deferred for now. This app
-  doesn't use `next/image` remote optimization, rewrites, middleware, or i18n, which
-  covers most of the actual exposure, but the upgrade is worth doing when there's time to
-  regression-test it.
+- **Gemini quota**: `gemini-3-flash-preview` is a valid, recognized model id on this API key,
+  confirmed by a live call — but the key's Google AI Studio project has no prepayment credits,
+  so live calls return `429 RESOURCE_EXHAUSTED`. Every AI-backed endpoint handles this as a
+  clean `502` with the upstream error message rather than crashing. Add billing at
+  [ai.studio/projects](https://ai.studio/projects) to unblock live generation.
 
 ## Tech stack
 
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
-| Auth | Auth.js v5, Credentials provider, JWT sessions, Prisma + libSQL (Turso in prod) |
+| Frontend | Next.js 16 (App Router), TypeScript, Tailwind CSS |
+| Auth | Auth.js v5, Credentials provider, JWT sessions |
 | Backend | FastAPI, Python |
 | Agents | LangGraph (`StateGraph`) |
 | LLM | Gemini (`gemini-3-flash-preview` via `langchain-google-genai`) |
-| Database | Firestore (backend domain data), libSQL/Turso (frontend auth) |
+| Database | Firestore (single database for both frontend and backend) |
+| Testing | pytest, 42 tests, offline (fake Firestore + mocked Gemini) |

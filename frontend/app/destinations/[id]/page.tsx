@@ -32,16 +32,15 @@ async function safeFetch<T>(path: string, init?: BackendFetchOptions) {
 export default async function DestinationDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const session = await auth();
   const isSignedIn = Boolean(session?.user?.id);
 
   let destination: Destination;
   try {
-    destination = await backendFetch<Destination>(
-      `/api/destinations/${params.id}`
-    );
+    destination = await backendFetch<Destination>(`/api/destinations/${id}`);
   } catch (err) {
     if (err instanceof BackendError && err.status === 404) {
       notFound();
@@ -62,10 +61,10 @@ export default async function DestinationDetailPage({
 
   const [hiddenGems, heritage, events, experiences, recommendations] =
     await Promise.all([
-      safeFetch<AiEntity[]>(`/api/destinations/${params.id}/hidden-gems`),
-      safeFetch<HeritageStory>(`/api/destinations/${params.id}/heritage`),
-      safeFetch<AiEntity[]>(`/api/destinations/${params.id}/events`),
-      safeFetch<AiEntity[]>(`/api/destinations/${params.id}/experiences`),
+      safeFetch<AiEntity[]>(`/api/destinations/${id}/hidden-gems`),
+      safeFetch<HeritageStory>(`/api/destinations/${id}/heritage`),
+      safeFetch<AiEntity[]>(`/api/destinations/${id}/events`),
+      safeFetch<AiEntity[]>(`/api/destinations/${id}/experiences`),
       safeFetch<RecommendationResponse>("/api/recommendations", {
         method: "POST",
         body: {

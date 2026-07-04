@@ -9,25 +9,30 @@ This is the single source of truth both the frontend (Next.js/Auth.js) and backe
 Browser
   │
   ▼
-Next.js (React, App Router) ── Auth.js v5 (Credentials + Prisma/Turso libSQL) ── owns user accounts, sessions, UI
+Next.js (React, App Router) ── Auth.js v5 (Credentials provider) ── owns sessions, UI
   │  server-side fetch, attaches short-lived bridge JWT
   ▼
-FastAPI (Python) ── LangGraph agent graph ── Gemini API ── owns travel domain data (Firestore)
+FastAPI (Python) ── LangGraph agent graph ── Gemini API
+  │
+  ▼
+Firestore (single database, both sides) ── firebase-admin (Node) / Firebase Admin SDK (Python)
 ```
 
-Two independent databases:
-- `frontend`: Auth.js users, via Prisma + a libSQL driver adapter — a local SQLite file
-  (`frontend/prisma/dev.db`) in dev, or a hosted Turso (libSQL) database in production when
-  `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN` are set.
-- `backend`: all travel/cultural domain data lives in **Firestore** (Google Cloud), accessed via
-  the Firebase Admin SDK. Collection layout:
-  - `destinations/{slug}` — one doc per destination (slug id, e.g. `jaipur`)
-    - `destinations/{slug}/hidden_gems/{autoId}`
-    - `destinations/{slug}/stories/{autoId}` (heritage narrative uses `theme == "__heritage__"`; the
-      storytelling endpoint uses arbitrary theme strings)
-    - `destinations/{slug}/events/{autoId}`
-    - `destinations/{slug}/experiences/{autoId}`
-  - `saved_items/{autoId}` — top-level collection, filtered by `user_id` field per query
+**One Firestore project serves both sides** (no separate SQLite/Turso/Prisma layer). Collection
+layout:
+- `users/{email}` — written by the **frontend** (Node `firebase-admin`) for registration/login:
+  `{id, name, email, passwordHash, createdAt}`. Doc id is the lowercased email.
+- `destinations/{slug}` — written/read by the **backend** (Python Firebase Admin SDK):
+  - `destinations/{slug}/hidden_gems/{autoId}`
+  - `destinations/{slug}/stories/{autoId}` (heritage narrative uses `theme == "__heritage__"`; the
+    storytelling endpoint uses arbitrary theme strings)
+  - `destinations/{slug}/events/{autoId}`
+  - `destinations/{slug}/experiences/{autoId}`
+- `saved_items/{autoId}` — top-level collection, filtered by `user_id` field per query
+
+The frontend and backend each hold their own copy of the same Firebase Admin service account
+JSON (`FIREBASE_SERVICE_ACCOUNT_JSON` in both `.env` files) and talk to Firestore independently —
+there's no direct frontend-to-backend database coupling, only the REST API + bridge JWT below.
 
 ## Auth bridge
 
@@ -113,9 +118,5 @@ NEXTAUTH_SECRET=<auth.js session secret>
 NEXTAUTH_URL=http://localhost:3000
 AUTH_BRIDGE_SECRET=<same shared secret as backend>
 BACKEND_API_URL=http://localhost:8000
-# Local dev fallback; Prisma resolves this relative to prisma/schema.prisma
-DATABASE_URL=file:./dev.db
-# Set both to use a hosted Turso database instead of the local SQLite file (e.g. in production)
-TURSO_DATABASE_URL=
-TURSO_AUTH_TOKEN=
+FIREBASE_SERVICE_ACCOUNT_JSON=<full JSON contents of a Firebase Admin service account key>
 ```
