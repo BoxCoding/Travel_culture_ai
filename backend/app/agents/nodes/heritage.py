@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from app.agents.llm import get_llm
+from app.agents.llm import get_llm, get_text
 from app.agents.state import GraphState
 
 SYSTEM_PROMPT = (
@@ -23,7 +23,7 @@ def generate_heritage(name: str, country: str, region: str, description: str) ->
     llm = get_llm(temperature=0.6)
     prompt = PROMPT_TEMPLATE.format(name=name, country=country, region=region, description=description)
     response = llm.invoke([SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=prompt)])
-    return response.content.strip()
+    return get_text(response.content).strip()
 
 
 def heritage_node(state: GraphState) -> GraphState:

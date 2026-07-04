@@ -21,8 +21,31 @@ def get_llm(temperature: float = 0.7) -> ChatGoogleGenerativeAI:
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 
 
-def extract_json(text: str) -> Any:
-    """Best-effort extraction of a JSON object/array from an LLM text response."""
+def get_text(content: Any) -> str:
+    """Normalizes a LangChain message's `.content` to a plain string.
+
+    Some models (including some Gemini variants) return `.content` as a list of content
+    blocks (e.g. [{"type": "text", "text": "..."}]) instead of a raw string, which breaks
+    any code that assumes a string (regex search, .strip(), etc).
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                parts.append(str(item.get("text", "")))
+            else:
+                parts.append(str(item))
+        return "".join(parts)
+    return str(content)
+
+
+def extract_json(content: Any) -> Any:
+    """Best-effort extraction of a JSON object/array from an LLM response."""
+    text = get_text(content)
     match = _FENCE_RE.search(text)
     candidate = match.group(1) if match else text.strip()
     try:

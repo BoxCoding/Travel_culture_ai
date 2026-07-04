@@ -2,7 +2,7 @@ import json
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from app.agents.llm import get_llm
+from app.agents.llm import get_llm, get_text
 from app.agents.state import GraphState
 
 SYSTEM_PROMPT = (
@@ -26,7 +26,7 @@ def synthesize(message: str, intent: str, result: dict) -> str:
     llm = get_llm(temperature=0.6)
     prompt = PROMPT_TEMPLATE.format(message=message, intent=intent, result=json.dumps(result, ensure_ascii=False))
     response = llm.invoke([SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=prompt)])
-    return response.content.strip()
+    return get_text(response.content).strip()
 
 
 def synthesize_node(state: GraphState) -> GraphState:
