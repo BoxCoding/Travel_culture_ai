@@ -1,5 +1,5 @@
 export interface Destination {
-  id: number;
+  id: string;
   name: string;
   country: string;
   region: string;
@@ -12,8 +12,8 @@ export interface Destination {
 
 /** Shared shape for HiddenGem / Experience / Event, per CONTRACT.md. */
 export interface AiEntity {
-  id: number;
-  destination_id: number;
+  id: string;
+  destination_id: string;
   name: string;
   description: string;
   category: string;
@@ -21,7 +21,7 @@ export interface AiEntity {
 }
 
 export interface HeritageStory {
-  destination_id?: number;
+  destination_id?: string;
   title?: string;
   narrative: string;
   ai_generated: boolean;

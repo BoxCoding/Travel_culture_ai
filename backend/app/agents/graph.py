@@ -9,18 +9,18 @@ from app.agents.nodes.recommend import recommend_attractions_node
 from app.agents.nodes.storytelling import storytelling_node
 from app.agents.nodes.synthesize import synthesize_node
 from app.agents.state import GraphState
-from app.database import SessionLocal
-from app.models import Destination
+from app.firestore_client import get_firestore_client
 
 
-def _destination_to_dict(dest: Destination) -> dict:
+def _destination_to_dict(doc) -> dict:
+    data = doc.to_dict()
     return {
-        "id": dest.id,
-        "name": dest.name,
-        "country": dest.country,
-        "region": dest.region,
-        "description": dest.description,
-        "tags": dest.tag_list,
+        "id": doc.id,
+        "name": data.get("name", ""),
+        "country": data.get("country", ""),
+        "region": data.get("region", ""),
+        "description": data.get("description", ""),
+        "tags": data.get("tags", []),
     }
 
 
@@ -33,31 +33,27 @@ def _resolve_destination_node(state: GraphState) -> GraphState:
     if not hint:
         return state
 
-    db = SessionLocal()
-    try:
-        dest = db.query(Destination).filter(Destination.name.ilike(f"%{hint}%")).first()
-        if dest:
-            state["destination"] = _destination_to_dict(dest)
-    finally:
-        db.close()
+    db = get_firestore_client()
+    hint_lower = hint.lower()
+    for doc in db.collection("destinations").stream():
+        if hint_lower in doc.to_dict().get("name", "").lower():
+            state["destination"] = _destination_to_dict(doc)
+            break
     return state
 
 
 def _recommend_from_chat_node(state: GraphState) -> GraphState:
-    db = SessionLocal()
-    try:
-        catalog = [
-            {
-                "name": d.name,
-                "country": d.country,
-                "region": d.region,
-                "tags": d.tag_list,
-                "description": d.description,
-            }
-            for d in db.query(Destination).all()
-        ]
-    finally:
-        db.close()
+    db = get_firestore_client()
+    catalog = [
+        {
+            "name": data.get("name", ""),
+            "country": data.get("country", ""),
+            "region": data.get("region", ""),
+            "tags": data.get("tags", []),
+            "description": data.get("description", ""),
+        }
+        for data in (doc.to_dict() for doc in db.collection("destinations").stream())
+    ]
 
     state.setdefault("result", {})["catalog"] = catalog
     if not state.get("interests") and state.get("chat_message"):

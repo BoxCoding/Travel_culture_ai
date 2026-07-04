@@ -35,9 +35,9 @@ export default async function HomePage({
 
   return (
     <div>
-      <section className="border-b border-sand-200 bg-gradient-to-b from-clay-50 to-sand-50">
+      <section className="border-b border-sand-200 bg-gradient-to-b from-leaf-50 to-sand-50">
         <div className="mx-auto max-w-6xl px-6 py-20 text-center">
-          <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-clay-600">
+          <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-leaf-600">
             Travel, guided by culture
           </p>
           <h1 className="mx-auto max-w-3xl font-serif text-4xl font-semibold leading-tight text-ink-900 sm:text-5xl">

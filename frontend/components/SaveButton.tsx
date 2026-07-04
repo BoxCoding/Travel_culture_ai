@@ -5,9 +5,13 @@ import Link from "next/link";
 
 export default function SaveButton({
   id,
+  destinationId,
+  itemType,
   isSignedIn,
 }: {
-  id: number;
+  id: string;
+  destinationId: string;
+  itemType: "hidden_gem" | "experience" | "event";
   isSignedIn: boolean;
 }) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
@@ -18,7 +22,7 @@ export default function SaveButton({
     return (
       <Link
         href="/login"
-        className="text-xs font-medium text-clay-700 underline decoration-dotted"
+        className="text-xs font-medium text-leaf-700 underline decoration-dotted"
       >
         Sign in to save
       </Link>
@@ -31,7 +35,11 @@ export default function SaveButton({
       const res = await fetch("/api/saved", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({
+          id,
+          destination_id: destinationId,
+          item_type: itemType,
+        }),
       });
       setStatus(res.ok ? "saved" : "error");
     } catch {
@@ -43,7 +51,7 @@ export default function SaveButton({
     <button
       onClick={handleSave}
       disabled={status === "saving" || status === "saved"}
-      className="text-xs font-medium text-clay-700 disabled:text-ink-700/40"
+      className="text-xs font-medium text-leaf-700 disabled:text-ink-700/40"
     >
       {status === "saved"
         ? "Saved ✓"

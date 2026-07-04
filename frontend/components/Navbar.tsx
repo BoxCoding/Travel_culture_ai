@@ -15,12 +15,12 @@ export default async function Navbar() {
         </Link>
 
         <nav className="flex items-center gap-6 text-sm font-medium text-ink-800">
-          <Link href="/" className="hover:text-clay-600">
+          <Link href="/" className="hover:text-leaf-600">
             Discover
           </Link>
           {session?.user ? (
             <>
-              <Link href="/dashboard" className="hover:text-clay-600">
+              <Link href="/dashboard" className="hover:text-leaf-600">
                 Dashboard
               </Link>
               <span className="hidden text-ink-700/50 sm:inline">
@@ -39,7 +39,7 @@ export default async function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/login" className="hover:text-clay-600">
+              <Link href="/login" className="hover:text-leaf-600">
                 Sign in
               </Link>
               <Link href="/register" className="btn-primary">

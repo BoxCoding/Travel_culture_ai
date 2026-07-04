@@ -9,8 +9,11 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
     auth_bridge_secret: str = "insecure-dev-secret"
-    database_url: str = "sqlite:///./app.db"
     cors_origins: str = "http://localhost:3000"
+
+    # Full JSON contents of a Firebase Admin service account key. Falls back to
+    # GOOGLE_APPLICATION_CREDENTIALS / Application Default Credentials if unset.
+    firebase_service_account_json: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:

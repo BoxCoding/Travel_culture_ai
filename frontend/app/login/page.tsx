@@ -83,7 +83,7 @@ function LoginForm() {
 
       <p className="text-center text-sm text-ink-700/60">
         No account yet?{" "}
-        <Link href="/register" className="font-medium text-clay-700">
+        <Link href="/register" className="font-medium text-leaf-700">
           Create one
         </Link>
       </p>

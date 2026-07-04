@@ -31,7 +31,7 @@ export default function Tabs({
             onClick={() => setActive(tab.id)}
             className={`rounded-full px-4 py-2 text-sm font-medium transition ${
               active === tab.id
-                ? "bg-clay-600 text-white"
+                ? "bg-leaf-600 text-white"
                 : "bg-sand-100 text-ink-700 hover:bg-sand-200"
             }`}
           >

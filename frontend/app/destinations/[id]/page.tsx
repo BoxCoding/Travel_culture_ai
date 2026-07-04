@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
+import SafeImage from "@/components/SafeImage";
 import { backendFetch, BackendError, type BackendFetchOptions } from "@/lib/backend";
 import type {
   AiEntity,
@@ -151,6 +151,7 @@ export default async function DestinationDetailPage({
           error={hiddenGems.error}
           emptyTitle="No hidden gems uncovered yet for this destination."
           isSignedIn={isSignedIn}
+          itemType="hidden_gem"
         />
       ),
     },
@@ -187,6 +188,7 @@ export default async function DestinationDetailPage({
           error={events.error}
           emptyTitle="No upcoming events found for this destination."
           isSignedIn={isSignedIn}
+          itemType="event"
           savable={false}
         />
       ),
@@ -200,6 +202,7 @@ export default async function DestinationDetailPage({
           error={experiences.error}
           emptyTitle="No cultural experiences listed yet for this destination."
           isSignedIn={isSignedIn}
+          itemType="experience"
         />
       ),
     },
@@ -207,18 +210,17 @@ export default async function DestinationDetailPage({
 
   return (
     <div>
-      <section className="relative h-72 w-full overflow-hidden bg-clay-100 sm:h-96">
+      <section className="relative h-72 w-full overflow-hidden bg-leaf-100 sm:h-96">
         {destination.image_url ? (
-          <Image
+          <SafeImage
             src={destination.image_url}
             alt={destination.name}
-            fill
-            priority
-            className="object-cover"
+            loading="eager"
+            className="h-full w-full object-cover"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <span className="font-serif text-3xl text-clay-400">
+            <span className="font-serif text-3xl text-leaf-600">
               {destination.name}
             </span>
           </div>

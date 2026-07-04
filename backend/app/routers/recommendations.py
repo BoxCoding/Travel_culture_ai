@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from google.cloud.firestore_v1.client import Client
 
 from app.agents.nodes.recommend import generate_recommendations
 from app.auth import get_current_user_optional
-from app.database import get_db
-from app.models import Destination
+from app.firestore_client import get_firestore_client
 from app.schemas import RecommendationOut, RecommendationRequest
 
 router = APIRouter(tags=["recommendations"])
@@ -13,23 +12,25 @@ router = APIRouter(tags=["recommendations"])
 @router.post("/recommendations", response_model=RecommendationOut)
 def recommend(
     body: RecommendationRequest,
-    db: Session = Depends(get_db),
+    db: Client = Depends(get_firestore_client),
     _user=Depends(get_current_user_optional),
 ):
-    query = db.query(Destination)
+    docs = list(db.collection("destinations").stream())
+    destinations = [d.to_dict() for d in docs]
+
     if body.region:
-        query = query.filter(Destination.region.ilike(body.region))
-    destinations = query.all()
-    if not destinations:
-        destinations = db.query(Destination).all()
+        region_lower = body.region.lower()
+        filtered = [d for d in destinations if d.get("region", "").lower() == region_lower]
+        if filtered:
+            destinations = filtered
 
     catalog = [
         {
-            "name": d.name,
-            "country": d.country,
-            "region": d.region,
-            "tags": d.tag_list,
-            "description": d.description,
+            "name": d.get("name", ""),
+            "country": d.get("country", ""),
+            "region": d.get("region", ""),
+            "tags": d.get("tags", []),
+            "description": d.get("description", ""),
         }
         for d in destinations
     ]

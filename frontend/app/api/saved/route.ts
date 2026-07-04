@@ -19,21 +19,28 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { id?: number | string };
+  let body: { id?: string; destination_id?: string; item_type?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ detail: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (body?.id === undefined || body?.id === null) {
-    return NextResponse.json({ detail: "id is required" }, { status: 400 });
+  if (!body?.id || !body?.destination_id || !body?.item_type) {
+    return NextResponse.json(
+      { detail: "id, destination_id, and item_type are required" },
+      { status: 400 }
+    );
   }
 
   try {
     const data = await backendFetch(`/api/experiences/${body.id}/save`, {
       method: "POST",
       requireAuth: true,
+      body: {
+        item_type: body.item_type,
+        destination_id: body.destination_id,
+      },
     });
     return NextResponse.json(data ?? { ok: true });
   } catch (err) {

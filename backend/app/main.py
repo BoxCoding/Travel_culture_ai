@@ -4,19 +4,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.database import Base, SessionLocal, engine
+from app.firestore_client import get_firestore_client
 from app.routers import chat, destinations, health, recommendations, saved, storytelling
 from app.seed import seed_destinations
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    try:
-        seed_destinations(db)
-    finally:
-        db.close()
+    seed_destinations(get_firestore_client())
     yield
 
 

@@ -9,15 +9,25 @@ This is the single source of truth both the frontend (Next.js/Auth.js) and backe
 Browser
   │
   ▼
-Next.js (React, App Router) ── Auth.js v5 (Credentials + Prisma/SQLite) ── owns user accounts, sessions, UI
+Next.js (React, App Router) ── Auth.js v5 (Credentials + Prisma/Turso libSQL) ── owns user accounts, sessions, UI
   │  server-side fetch, attaches short-lived bridge JWT
   ▼
-FastAPI (Python) ── LangGraph agent graph ── Gemini API ── owns travel domain data (SQLite via SQLAlchemy)
+FastAPI (Python) ── LangGraph agent graph ── Gemini API ── owns travel domain data (Firestore)
 ```
 
-Two separate SQLite files:
-- `frontend/prisma/dev.db` — Auth.js users (managed by Prisma).
-- `backend/app.db` — destinations, hidden gems, stories, events, experiences, saved items (managed by SQLAlchemy).
+Two independent databases:
+- `frontend`: Auth.js users, via Prisma + a libSQL driver adapter — a local SQLite file
+  (`frontend/prisma/dev.db`) in dev, or a hosted Turso (libSQL) database in production when
+  `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN` are set.
+- `backend`: all travel/cultural domain data lives in **Firestore** (Google Cloud), accessed via
+  the Firebase Admin SDK. Collection layout:
+  - `destinations/{slug}` — one doc per destination (slug id, e.g. `jaipur`)
+    - `destinations/{slug}/hidden_gems/{autoId}`
+    - `destinations/{slug}/stories/{autoId}` (heritage narrative uses `theme == "__heritage__"`; the
+      storytelling endpoint uses arbitrary theme strings)
+    - `destinations/{slug}/events/{autoId}`
+    - `destinations/{slug}/experiences/{autoId}`
+  - `saved_items/{autoId}` — top-level collection, filtered by `user_id` field per query
 
 ## Auth bridge
 
@@ -36,35 +46,43 @@ Two separate SQLite files:
 ## REST API (FastAPI, prefix `/api`)
 
 All responses are JSON. Errors: `{"detail": "message"}` with appropriate HTTP status.
+All IDs are Firestore document ID strings (destination IDs are human-readable slugs;
+sub-entity IDs are Firestore auto-IDs).
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/api/health` | none | liveness check |
 | GET | `/api/destinations` | optional | list destinations; query params `q`, `region` |
 | GET | `/api/destinations/{id}` | optional | destination detail |
-| GET | `/api/destinations/{id}/hidden-gems` | optional | AI-uncovered hidden gems (generated on first request, cached in DB) |
+| GET | `/api/destinations/{id}/hidden-gems` | optional | AI-uncovered hidden gems (generated on first request, cached in Firestore) |
 | GET | `/api/destinations/{id}/heritage` | optional | AI-generated heritage/cultural-significance narrative (cached) |
 | GET | `/api/destinations/{id}/events` | optional | upcoming local events/festivals |
 | GET | `/api/destinations/{id}/experiences` | optional | authentic cultural experiences (workshops, homestays, artisans, festivals) |
 | POST | `/api/storytelling` | optional | body `{destination_id, theme?}` → generates immersive first-person storytelling narrative |
 | POST | `/api/recommendations` | optional | body `{interests: string[], budget?, duration_days?, region?, travel_style?}` → LangGraph agent returns ranked attractions + hidden gems + reasoning |
 | POST | `/api/chat` | required | body `{message, thread_id?}` → conversational concierge (multi-turn LangGraph graph, intent-routed) |
-| POST | `/api/experiences/{id}/save` | required | saves an experience/gem/event to the user's list |
+| POST | `/api/experiences/{item_id}/save` | required | body `{item_type: "hidden_gem"\|"experience"\|"event", destination_id}` → saves an item to the user's list |
 | GET | `/api/me/saved` | required | list current user's saved items (joined with source entity) |
 
 ### Key response shapes
 
 `Destination`:
 ```json
-{ "id": 1, "name": "Jaipur", "country": "India", "region": "Asia",
+{ "id": "jaipur", "name": "Jaipur", "country": "India", "region": "Asia",
   "description": "...", "image_url": "...", "lat": 26.9, "lng": 75.8,
   "tags": ["heritage", "architecture", "food"] }
 ```
 
 `HiddenGem` / `Experience` / `Event` all share the shape:
 ```json
-{ "id": 1, "destination_id": 1, "name": "...", "description": "...",
+{ "id": "aB3xY...", "destination_id": "jaipur", "name": "...", "description": "...",
   "category": "...", "ai_generated": true }
+```
+
+`Heritage` (`GET /api/destinations/{id}/heritage`):
+```json
+{ "id": "...", "destination_id": "jaipur", "title": "...", "narrative": "...",
+  "theme": "__heritage__", "ai_generated": true, "created_at": "..." }
 ```
 
 `POST /api/recommendations` response:
@@ -83,9 +101,9 @@ All responses are JSON. Errors: `{"detail": "message"}` with appropriate HTTP st
 Backend (`backend/.env`):
 ```
 GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-2.0-flash
+GEMINI_MODEL=gemini-3-flash
 AUTH_BRIDGE_SECRET=<shared secret>
-DATABASE_URL=sqlite:///./app.db
+FIREBASE_SERVICE_ACCOUNT_JSON=<full JSON contents of a Firebase Admin service account key>
 CORS_ORIGINS=http://localhost:3000
 ```
 
@@ -95,5 +113,9 @@ NEXTAUTH_SECRET=<auth.js session secret>
 NEXTAUTH_URL=http://localhost:3000
 AUTH_BRIDGE_SECRET=<same shared secret as backend>
 BACKEND_API_URL=http://localhost:8000
-DATABASE_URL=file:./prisma/dev.db
+# Local dev fallback; Prisma resolves this relative to prisma/schema.prisma
+DATABASE_URL=file:./dev.db
+# Set both to use a hosted Turso database instead of the local SQLite file (e.g. in production)
+TURSO_DATABASE_URL=
+TURSO_AUTH_TOKEN=
 ```

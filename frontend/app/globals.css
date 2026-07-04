@@ -14,15 +14,15 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-full bg-clay-600 px-5 py-2.5 text-sm font-medium text-white shadow-soft transition hover:bg-clay-700 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center rounded-full bg-leaf-600 px-5 py-2.5 text-sm font-medium text-white shadow-soft transition hover:bg-leaf-700 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-full border border-clay-300 bg-white px-5 py-2.5 text-sm font-medium text-clay-700 transition hover:bg-clay-50 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center rounded-full border border-leaf-300 bg-white px-5 py-2.5 text-sm font-medium text-leaf-700 transition hover:bg-leaf-50 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .input-field {
-    @apply w-full rounded-lg border border-sand-200 bg-white px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-700/40 focus:border-clay-400 focus:outline-none focus:ring-2 focus:ring-clay-200;
+    @apply w-full rounded-lg border border-sand-200 bg-white px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-700/40 focus:border-leaf-400 focus:outline-none focus:ring-2 focus:ring-leaf-200;
   }
 
   .card {
@@ -30,6 +30,6 @@
   }
 
   .ai-badge {
-    @apply inline-flex items-center gap-1.5 rounded-full bg-clay-50 px-3 py-1 text-xs font-medium text-clay-700 ring-1 ring-inset ring-clay-200;
+    @apply inline-flex items-center gap-1.5 rounded-full bg-leaf-50 px-3 py-1 text-xs font-medium text-leaf-700 ring-1 ring-inset ring-leaf-200;
   }
 }

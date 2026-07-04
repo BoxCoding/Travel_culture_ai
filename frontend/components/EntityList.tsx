@@ -8,12 +8,14 @@ export default function EntityList({
   error,
   emptyTitle,
   isSignedIn,
+  itemType,
   savable = true,
 }: {
   items: AiEntity[];
   error?: string;
   emptyTitle: string;
   isSignedIn: boolean;
+  itemType: "hidden_gem" | "experience" | "event";
   savable?: boolean;
 }) {
   if (error) {
@@ -45,7 +47,12 @@ export default function EntityList({
           <p className="text-sm text-ink-700">{item.description}</p>
           {savable && (
             <div className="mt-2">
-              <SaveButton id={item.id} isSignedIn={isSignedIn} />
+              <SaveButton
+                id={item.id}
+                destinationId={item.destination_id}
+                itemType={itemType}
+                isSignedIn={isSignedIn}
+              />
             </div>
           )}
         </div>

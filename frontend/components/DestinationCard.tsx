@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import SafeImage from "@/components/SafeImage";
 import type { Destination } from "@/lib/types";
 
 export default function DestinationCard({
@@ -12,17 +12,15 @@ export default function DestinationCard({
       href={`/destinations/${destination.id}`}
       className="card group flex flex-col overflow-hidden transition hover:-translate-y-1 hover:shadow-lg"
     >
-      <div className="relative h-48 w-full overflow-hidden bg-clay-100">
+      <div className="relative h-48 w-full overflow-hidden bg-leaf-100">
         {destination.image_url ? (
-          <Image
+          <SafeImage
             src={destination.image_url}
             alt={destination.name}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-clay-400">
+          <div className="flex h-full w-full items-center justify-center text-leaf-600">
             <span className="font-serif text-lg">{destination.name}</span>
           </div>
         )}

@@ -67,7 +67,7 @@ export default function ChatWidget({
     <div className="fixed bottom-6 right-6 z-50">
       {open && (
         <div className="mb-4 flex h-[28rem] w-80 flex-col overflow-hidden rounded-2xl border border-sand-200 bg-white shadow-soft sm:w-96">
-          <div className="flex items-center justify-between border-b border-sand-200 bg-clay-50 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-sand-200 bg-leaf-50 px-4 py-3">
             <div>
               <p className="font-serif text-sm font-semibold text-ink-900">
                 Travel concierge
@@ -113,7 +113,7 @@ export default function ChatWidget({
                     key={i}
                     className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
                       m.role === "user"
-                        ? "ml-auto bg-clay-600 text-white"
+                        ? "ml-auto bg-leaf-600 text-white"
                         : "bg-sand-100 text-ink-900"
                     }`}
                   >
@@ -156,7 +156,7 @@ export default function ChatWidget({
 
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-clay-600 text-white shadow-soft transition hover:bg-clay-700"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-leaf-600 text-white shadow-soft transition hover:bg-leaf-700"
         aria-label="Toggle chat"
       >
         {open ? "✕" : "💬"}

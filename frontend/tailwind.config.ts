@@ -9,17 +9,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        clay: {
-          50: "#fdf6f1",
-          100: "#f8e8dc",
-          200: "#f0cdb0",
-          300: "#e6ac7e",
-          400: "#dc8a54",
-          500: "#c96a35",
-          600: "#a94f26",
-          700: "#873c20",
-          800: "#6d3220",
-          900: "#5a2b1e",
+        leaf: {
+          50: "#f3faf1",
+          100: "#e1f3db",
+          200: "#c3e6b9",
+          300: "#9dd48c",
+          400: "#74bd63",
+          500: "#4f9d44",
+          600: "#3c7e34",
+          700: "#2f632a",
+          800: "#274f24",
+          900: "#21421f",
         },
         ink: {
           900: "#1f1b17",
@@ -36,7 +36,7 @@ const config: Config = {
         serif: ["Georgia", "Cambria", "Times New Roman", "serif"],
       },
       boxShadow: {
-        soft: "0 10px 40px -15px rgba(90, 43, 30, 0.25)",
+        soft: "0 10px 40px -15px rgba(39, 79, 36, 0.25)",
       },
     },
   },
